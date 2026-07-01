@@ -15,7 +15,6 @@ def index(request):
     else:
         tasks=Task.objects.order_by('-posted_at')
 
-    tasks=Task.objects.all()
     context = {
         'tasks': tasks,
     }
