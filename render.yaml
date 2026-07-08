@@ -6,7 +6,11 @@ databases:
 
 services:
   - type: web
+<<<<<<< HEAD
     name: django-test-web-13
+=======
+    name: django-test-iniad-nishiwaki
+>>>>>>> refs/remotes/origin/main
     env: python
     plan: free
     branch: main
