@@ -130,3 +130,20 @@ class TaskViewTestCase(TestCase):
         self.assertEqual(response.url, '/{}/'.format(task.pk))
         self.assertEqual(task.title, 'updated task')
         self.assertEqual(task.due_at, timezone.make_aware(datetime(2024, 8, 1, 23, 59, 59)))
+
+    def test_close_get_success(self):
+        task = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
+        task.save()
+        client = Client()
+        response = client.get('/{}/close>'.format(task.pk))
+
+        task.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/')
+        self.assertTrue(task.completed)
+
+    def test_close_get_fail(self):
+        client = Client()
+        response = client.get('/1/close>')
+
+        self.assertEqual(response.status_code, 404)
