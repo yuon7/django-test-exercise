@@ -1,8 +1,5 @@
-<<<<<<< HEAD
+
 Django==6.0.6
-=======
-Django==5.0.6
->>>>>>> a7d2f5daffc668c9d09476da51bebb8b71f78a11
 whitenoise
 gunicorn
 psycopg2-binary
