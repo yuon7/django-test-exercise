@@ -57,3 +57,12 @@ def close(request, task_id):
     task.completed = True
     task.save()
     return redirect(index)
+
+
+def delete(request, task_id):
+    try:
+        task = Task.objects.get(pk=task_id)
+    except Task.DoesNotExist:
+        raise Http404('Task does not exist')
+    task.delete()
+    return redirect(index)
