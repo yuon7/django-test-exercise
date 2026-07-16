@@ -16,12 +16,24 @@
       {% if task.due_at %}
       <li>Due at: {{ task.due_at }}</li>
       {% endif %}
-      {% if task.completed %}
-      <li>Status: Completed</li>
-      {% else %}
-      <li>Status: Not Completed</li>
-      {% endif %}
+      <li>Status: {{ task.get_completed_display }}</li>
     </ul>
+
+    {% if task.completed == completed_statuses.NOT_STARTED %}
+    <div>
+      <form action="{% url 'advance_status' task.id %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Start</button>
+      </form>
+    </div>
+    {% elif task.completed == completed_statuses.IN_PROGRESS %}
+    <div>
+      <form action="{% url 'advance_status' task.id %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Complete</button>
+      </form>
+    </div>
+    {% endif %}
 
     <div>
       <a href="{% url 'index' %}">Top</a>

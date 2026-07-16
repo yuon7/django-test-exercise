@@ -23,6 +23,14 @@
         <input id="dueInput" name="due_at" type="datetime-local" value="{{ task.due_at |date:"Y-m-d H:i" }}">
       </div>
       <div>
+        <label for="completedInput">Status</label><br>
+        <select id="completedInput" name="completed">
+          {% for status in completed_statuses %}
+          <option value="{{ status.value }}" {% if task.completed == status.value %}selected{% endif %}>{{ status.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
         <button type="submit">Submit</button>
       </div>
     </form>

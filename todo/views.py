@@ -29,6 +29,7 @@ def detail(request, task_id):
     
     context = {
         'task': task,
+        'completed_statuses': Task.CompletedStatus,
     }
     return render(request, 'todo/detail.html', context)
 
@@ -41,11 +42,13 @@ def update(request, task_id):
     if request.method == 'POST':
         task.title = request.POST['title']
         task.due_at = make_aware(parse_datetime(request.POST['due_at']))
+        task.completed = int(request.POST['completed'])
         task.save()
         return redirect('detail', task_id)
 
     context = {
-        'task': task
+        'task': task,
+        'completed_statuses': Task.CompletedStatus,
     }
     return render(request, 'todo/edit.html', context)
 
@@ -54,9 +57,22 @@ def close(request, task_id):
         task = Task.objects.get(pk=task_id)
     except Task.DoesNotExist:
         raise Http404('Task dose not exist')
-    task.completed = True
+    task.completed = Task.CompletedStatus.COMPLETED
     task.save()
     return redirect(index)
+
+
+def advance_status(request, task_id):
+    try:
+        task = Task.objects.get(pk=task_id)
+    except Task.DoesNotExist:
+        raise Http404('Task does not exist')
+
+    if task.completed < Task.CompletedStatus.COMPLETED:
+        task.completed += 1
+        task.save()
+
+    return redirect('detail', task_id)
 
 
 def delete(request, task_id):
