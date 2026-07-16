@@ -55,8 +55,10 @@
         {% else %}
         <li>Status: Not Completed</li>
         {% endif %}
+        <li>Status: {{ task.get_completed_display }}</li>
       </ul>
     </div>
     {% endfor %}
   </body>
+</html>
 
