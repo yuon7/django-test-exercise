@@ -180,9 +180,26 @@ class TaskViewTestCase(TestCase):
         client = Client()
         response = client.get('/{}/delete/'.format(task.pk))
 
+        task.refresh_from_db()
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, '/')
-        self.assertFalse(Task.objects.filter(pk=task.pk).exists())
+        self.assertIsNotNone(task.deleted_at)
+        self.assertFalse(Task.objects.filter(pk=task.pk, deleted_at__isnull=True).exists())
+        self.assertTrue(Task.objects.filter(pk=task.pk, deleted_at__isnull=False).exists())
+
+    def test_restore_deleted_tasks(self):
+        task = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
+        task.save()
+        client = Client()
+        client.get('/{}/delete/'.format(task.pk))
+
+        response = client.post('/deleted/restore/', {'task_ids': [task.pk]})
+
+        task.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/deleted/')
+        self.assertIsNone(task.deleted_at)
+        self.assertTrue(Task.objects.filter(pk=task.pk, deleted_at__isnull=True).exists())
 
     def test_delete_get_fail(self):
         client = Client()

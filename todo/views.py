@@ -12,33 +12,35 @@ def index(request):
         task.save()
 
     if request.GET.get('order') == 'due':
-        tasks = Task.objects.order_by('due_at')
+        tasks = Task.objects.filter(deleted_at__isnull=True).order_by('due_at')
     else:
-        tasks=Task.objects.order_by('-posted_at')
+        tasks=Task.objects.filter(deleted_at__isnull=True).order_by('-posted_at')
 
     context = {
         'tasks': tasks,
     }
     return render(request, 'todo/index.html', context)
 
+
 def detail(request, task_id):
     try:
-        task = Task.objects.get(pk=task_id)
+        task = Task.objects.filter(deleted_at__isnull=True).get(pk=task_id)
     except Task.DoesNotExist:
         raise Http404("Task does not exist")
-    
+
     context = {
         'task': task,
         'completed_statuses': Task.CompletedStatus,
     }
     return render(request, 'todo/detail.html', context)
 
+
 def update(request, task_id):
     try:
-        task = Task.objects.get(pk=task_id)
+        task = Task.objects.filter(deleted_at__isnull=True).get(pk=task_id)
     except Task.DoesNotExist:
         raise Http404("Task does not exist")
-    
+
     if request.method == 'POST':
         task.title = request.POST['title']
         task.due_at = make_aware(parse_datetime(request.POST['due_at']))
@@ -52,9 +54,10 @@ def update(request, task_id):
     }
     return render(request, 'todo/edit.html', context)
 
+
 def close(request, task_id):
     try:
-        task = Task.objects.get(pk=task_id)
+        task = Task.objects.filter(deleted_at__isnull=True).get(pk=task_id)
     except Task.DoesNotExist:
         raise Http404('Task dose not exist')
     task.completed = Task.CompletedStatus.COMPLETED
@@ -77,8 +80,23 @@ def advance_status(request, task_id):
 
 def delete(request, task_id):
     try:
-        task = Task.objects.get(pk=task_id)
+        task = Task.objects.filter(deleted_at__isnull=True).get(pk=task_id)
     except Task.DoesNotExist:
         raise Http404('Task does not exist')
     task.delete()
     return redirect(index)
+
+
+def deleted_tasks(request):
+    deleted_tasks = Task.objects.filter(deleted_at__isnull=False).order_by('-deleted_at')
+    context = {
+        'deleted_tasks': deleted_tasks,
+    }
+    return render(request, 'todo/deleted.html', context)
+
+
+def restore_deleted_tasks(request):
+    if request.method == 'POST':
+        task_ids = request.POST.getlist('task_ids')
+        Task.objects.filter(pk__in=task_ids, deleted_at__isnull=False).update(deleted_at=None)
+    return redirect('deleted_tasks')
