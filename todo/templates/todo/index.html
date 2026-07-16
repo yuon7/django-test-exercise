@@ -11,23 +11,37 @@
 
   <body>
     <h1>Sample To Do Application</h1>
-    <form action="{% url 'index' %}" method="post">
+    <form action="{% url 'index' %}" method="post" class="task-form">
       {% csrf_token %}
       <div>
         <label for="titleInput">Title</label><br>
-        <input id="titleInput" name="title" type="text" placeholder="Input title">
+        <input id="titleInput" name="title" type="text" placeholder="Input title" required>
       </div>
       <div>
-        <label for="dueInput">Due at:</label><br>
+        <label for="dueInput">Due at</label><br>
         <input id="dueInput" name="due_at" type="datetime-local">
       </div>
-      <div>
+      <div class="input-with-suggestions">
         <label for="categoryInput">Category</label><br>
-        <input id="categoryInput" name="category" type="text" placeholder="Optional category">
+        <input id="categoryInput" name="category" type="text" placeholder="Optional category" autocomplete="off">
+        <div class="suggestion-list" id="category-suggestions" role="listbox" aria-label="Category suggestions">
+          {% for category in categories %}
+          <button type="button" class="suggestion-item" data-value="{{ category.name }}">{{ category.name }}</button>
+          {% empty %}
+          <div class="suggestion-empty">No categories yet</div>
+          {% endfor %}
+        </div>
       </div>
-      <div>
+      <div class="input-with-suggestions">
         <label for="tagsInput">Tags</label><br>
-        <input id="tagsInput" name="tags" type="text" placeholder="Comma-separated tags">
+        <input id="tagsInput" name="tags" type="text" placeholder="Comma-separated tags" autocomplete="off">
+        <div class="suggestion-list" id="tag-suggestions" role="listbox" aria-label="Tag suggestions">
+          {% for tag in tags %}
+          <button type="button" class="suggestion-item" data-value="{{ tag.name }}">{{ tag.name }}</button>
+          {% empty %}
+          <div class="suggestion-empty">No tags yet</div>
+          {% endfor %}
+        </div>
       </div>
       <div>
         <button type="submit">Submit</button>
@@ -36,8 +50,10 @@
     <br>
 
     <div>
-      <a href="{% url 'index' %}?order=due">Sort by Due Date</a> |
-      <a href="{% url 'index' %}?order=post">Sort by Posted Date</a>
+      <a href="{% url 'index' %}?sort=post">Sort by Posted Date</a> |
+      <a href="{% url 'index' %}?sort=due">Sort by Due Date</a> |
+      <a href="{% url 'index' %}?sort=category">Sort by Category</a> |
+      <a href="{% url 'index' %}?sort=tag">Sort by Tag</a>
     </div>
 
     {% for task in tasks %}
@@ -63,4 +79,57 @@
     </div>
     {% endfor %}
   </body>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.input-with-suggestions').forEach(function (wrapper) {
+        const input = wrapper.querySelector('input');
+        const list = wrapper.querySelector('.suggestion-list');
+        if (!input || !list) {
+          return;
+        }
+
+        const showSuggestions = function () {
+          const query = input.value.trim().toLowerCase();
+          const items = list.querySelectorAll('.suggestion-item');
+          let hasVisibleItem = false;
+
+          items.forEach(function (item) {
+            const value = item.dataset.value.toLowerCase();
+            const matches = value.includes(query);
+            item.style.display = matches ? 'flex' : 'none';
+            if (matches) {
+              hasVisibleItem = true;
+            }
+          });
+
+          if (query.length === 0) {
+            list.classList.add('is-open');
+          } else {
+            list.classList.toggle('is-open', hasVisibleItem);
+          }
+        };
+
+        input.addEventListener('focus', showSuggestions);
+        input.addEventListener('input', showSuggestions);
+
+        input.addEventListener('blur', function () {
+          setTimeout(function () {
+            list.classList.remove('is-open');
+          }, 120);
+        });
+
+        list.addEventListener('mousedown', function (event) {
+          const button = event.target.closest('.suggestion-item');
+          if (!button) {
+            return;
+          }
+          event.preventDefault();
+          input.value = button.dataset.value;
+          list.classList.remove('is-open');
+          input.focus();
+        });
+      });
+    });
+  </script>
+</html>
 

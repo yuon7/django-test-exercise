@@ -77,6 +77,30 @@ class TaskTagCategoryTestCase(TestCase):
         self.assertEqual(task.category.name, 'Work')
         self.assertEqual(set(task.tags.values_list('name', flat=True)), {'study', 'urgent'})
 
+    def test_index_sort_by_category(self):
+        category_work = Category.objects.create(name='Work')
+        category_study = Category.objects.create(name='Study')
+        task_work = Task.objects.create(title='work task', category=category_work)
+        task_study = Task.objects.create(title='study task', category=category_study)
+
+        response = self.client.get('/?sort=category')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context['tasks']), [task_study, task_work])
+
+    def test_index_sort_by_tag(self):
+        tag_alpha = Tag.objects.create(name='alpha')
+        tag_beta = Tag.objects.create(name='beta')
+        task_alpha = Task.objects.create(title='alpha task')
+        task_beta = Task.objects.create(title='beta task')
+        task_alpha.tags.add(tag_alpha)
+        task_beta.tags.add(tag_beta)
+
+        response = self.client.get('/?sort=tag')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context['tasks']), [task_alpha, task_beta])
+
 class TaskViewTestCase(TestCase):
     def test_index_get(self):
         client = Client()
@@ -101,7 +125,7 @@ class TaskViewTestCase(TestCase):
         task2 = Task(title='task2',due_at=timezone.make_aware(datetime(2024, 8,1 )))
         task2.save()
         client = Client()
-        response = client.get('/?order=post')
+        response = client.get('/?sort=post')
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.templates[0].name, 'todo/index.html')
@@ -114,7 +138,7 @@ class TaskViewTestCase(TestCase):
         task2 = Task(title='task2',due_at=timezone.make_aware(datetime(2024, 8,1 )))
         task2.save()
         client = Client()
-        response = client.get('/?order=due')
+        response = client.get('/?sort=due')
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.templates[0].name, 'todo/index.html')

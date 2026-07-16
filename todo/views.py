@@ -42,13 +42,24 @@ def index(request):
 
     tasks = Task.objects.select_related('category').prefetch_related('tags')
 
-    if request.GET.get('order') == 'due':
-        tasks = tasks.order_by('due_at')
+    sort_mode = request.GET.get('sort', 'post')
+    if sort_mode == 'due':
+        tasks = tasks.order_by('due_at', '-posted_at')
+    elif sort_mode == 'category':
+        tasks = tasks.order_by('category__name', '-posted_at')
+    elif sort_mode == 'tag':
+        tasks = tasks.order_by('tags__name', '-posted_at')
     else:
         tasks = tasks.order_by('-posted_at')
 
+    categories = Category.objects.order_by('name')
+    tags = Tag.objects.order_by('name')
+
     context = {
         'tasks': tasks,
+        'categories': categories,
+        'tags': tags,
+        'current_sort': sort_mode,
     }
     return render(request, 'todo/index.html', context)
 
