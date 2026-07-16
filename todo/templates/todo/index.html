@@ -11,7 +11,6 @@
 
   <body>
     <h1>Sample To Do Application</h1>
-    <p>You can submit tasks from the following form.</p>
     <form action="{% url 'index' %}" method="post">
       {% csrf_token %}
       <div>
@@ -21,6 +20,14 @@
       <div>
         <label for="dueInput">Due at:</label><br>
         <input id="dueInput" name="due_at" type="datetime-local">
+      </div>
+      <div>
+        <label for="categoryInput">Category</label><br>
+        <input id="categoryInput" name="category" type="text" placeholder="Optional category">
+      </div>
+      <div>
+        <label for="tagsInput">Tags</label><br>
+        <input id="tagsInput" name="tags" type="text" placeholder="Comma-separated tags">
       </div>
       <div>
         <button type="submit">Submit</button>
@@ -40,6 +47,12 @@
         <li>Posted at: {{ task.posted_at }}</li>
         {% if task.due_at %} 
         <li>Due at: {{ task.due_at }}</li>
+        {% endif %}
+        {% if task.category %}
+        <li>Category: {{ task.category.name }}</li>
+        {% endif %}
+        {% if task.tags.all %}
+        <li>Tags: {% for tag in task.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</li>
         {% endif %}
         {% if task.completed %} 
         <li>Status: Completed</li>
