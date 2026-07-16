@@ -26,6 +26,12 @@ class TaskModelTestCase(TestCase):
         self.assertEqual(task.title, 'task2')
         self.assertEqual(task.completed, Task.CompletedStatus.NOT_STARTED)
         self.assertIsNone(task.due_at,None)
+
+    def test_create_task_with_priority(self):
+        task = Task.objects.create(title='task3', priority=Task.PRIORITY_HIGH)
+
+        task = Task.objects.get(pk=task.pk)
+        self.assertEqual(task.priority, Task.PRIORITY_HIGH)
     
     def test_is_overdue_future(self):
         due=timezone.make_aware(timezone.datetime(2024, 6, 30, 23, 59, 59))
@@ -67,6 +73,15 @@ class TaskViewTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.templates[0].name, 'todo/index.html')
         self.assertEqual(len(response.context['tasks']), 1)
+
+    def test_index_post_saves_priority(self):
+        client = Client()
+        data = {'title':'Priority Task', 'due_at':'2024-06-30 23:59:59', 'priority': Task.PRIORITY_HIGH}
+        response = client.post('/', data)
+
+        self.assertEqual(response.status_code, 200)
+        task = Task.objects.get(title='Priority Task')
+        self.assertEqual(task.priority, Task.PRIORITY_HIGH)
 
     def test_index_get_order_post(self):
         task1 = Task(title='task1',due_at=timezone.make_aware(datetime(2024, 7,1 )))
