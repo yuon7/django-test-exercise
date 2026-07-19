@@ -23,10 +23,18 @@
         <input id="dueInput" name="due_at" type="datetime-local" value="{{ task.due_at |date:"Y-m-d H:i" }}">
       </div>
       <div>
+        <label for="categoryInput">Category</label><br>
+        <input id="categoryInput" name="category" type="text" value="{{ task.category.name|default:'' }}">
+      </div>
+      <div>
+        <label for="tagsInput">Tags</label><br>
+        <input id="tagsInput" name="tags" type="text" value="{% for tag in task.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+      </div>
+      <div>
         <label for="completedInput">Status</label><br>
         <select id="completedInput" name="completed">
-          {% for status in completed_statuses %}
-          <option value="{{ status.value }}" {% if task.completed == status.value %}selected{% endif %}>{{ status.label }}</option>
+          {% for value, label in completed_statuses.choices %}
+          <option value="{{ value }}" {% if task.completed == value %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>

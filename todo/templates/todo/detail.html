@@ -16,7 +16,17 @@
       {% if task.due_at %}
       <li>Due at: {{ task.due_at }}</li>
       {% endif %}
-      <li>Status: {{ task.get_completed_display }}</li>
+      {% if task.category %}
+      <li>Category: {{ task.category.name }}</li>
+      {% endif %}
+      {% if task.tags.all %}
+      <li>Tags: {% for tag in task.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</li>
+      {% endif %}
+      {% if task.completed %}
+      <li>Status: Completed</li>
+      {% else %}
+     <li>Status: {{ task.get_completed_display }}</li>
+      {% endif %}
     </ul>
 
     {% if task.completed == completed_statuses.NOT_STARTED %}

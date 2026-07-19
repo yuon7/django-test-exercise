@@ -1,7 +1,7 @@
 from django.test import TestCase,Client
 from django.utils import timezone
 from datetime import datetime
-from todo.models import Task
+from todo.models import Task, Category, Tag
 # Create your tests here.
 class SampleTestCase(TestCase):
     def test_sample(self):
@@ -50,6 +50,33 @@ class TaskModelTestCase(TestCase):
         
         self.assertFalse(task.is_overdue(current)) 
     
+class TaskTagCategoryTestCase(TestCase):
+    def test_create_task_with_category_and_tags(self):
+        category = Category.objects.create(name='Work')
+        tag1 = Tag.objects.create(name='study')
+        tag2 = Tag.objects.create(name='urgent')
+
+        task = Task.objects.create(title='task with category', category=category)
+        task.tags.add(tag1, tag2)
+
+        task.refresh_from_db()
+        self.assertEqual(task.category, category)
+        self.assertEqual(set(task.tags.values_list('name', flat=True)), {'study', 'urgent'})
+
+    def test_index_post_with_category_and_tags(self):
+        client = Client()
+        response = client.post('/', {
+            'title': 'Tagged Task',
+            'due_at': '2024-06-30 23:59:59',
+            'category': 'Work',
+            'tags': 'study, urgent',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        task = Task.objects.get(title='Tagged Task')
+        self.assertEqual(task.category.name, 'Work')
+        self.assertEqual(set(task.tags.values_list('name', flat=True)), {'study', 'urgent'})
+
 class TaskViewTestCase(TestCase):
     def test_index_get(self):
         client = Client()
@@ -163,6 +190,23 @@ class TaskViewTestCase(TestCase):
         self.assertEqual(task.title, 'updated task')
         self.assertEqual(task.due_at, timezone.make_aware(datetime(2024, 8, 1, 23, 59, 59)))
         self.assertEqual(task.completed, Task.CompletedStatus.IN_PROGRESS)
+
+    def test_update_post_saves_category_and_tags(self):
+        task = Task.objects.create(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
+        client = Client()
+        data = {
+            'title': 'updated task',
+            'due_at': '2024-08-01 23:59:59',
+            'completed': str(Task.CompletedStatus.IN_PROGRESS),
+            'category': 'Work',
+            'tags': 'study, urgent',
+        }
+        response = client.post('/{}/edit/'.format(task.pk), data)
+
+        task.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(task.category.name, 'Work')
+        self.assertEqual(set(task.tags.values_list('name', flat=True)), {'study', 'urgent'})
 
     def test_update_get_has_status_options(self):
         task = Task.objects.create(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))

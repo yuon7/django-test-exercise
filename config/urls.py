@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
 from todo import views as todo_views
 
 urlpatterns = [
@@ -24,6 +24,7 @@ urlpatterns = [
     path('<int:task_id>/', todo_views.detail, name='detail'),
     path('<int:task_id>/delete/', todo_views.delete, name='delete'),
     path('<int:task_id>/edit/', todo_views.update, name='update'),
-    path('<int:task_id>/close', todo_views.close, name='close'),
+    path('<int:task_id>/close/', todo_views.close, name='close'),
+    re_path(r'^(?P<task_id>\d+)/close/?$', todo_views.close, name='close_with_gt'),
     path('<int:task_id>/advance/', todo_views.advance_status, name='advance_status'),
 ]
