@@ -15,7 +15,7 @@ class TaskModelTestCase(TestCase):
 
         task= Task.objects.get(pk=task.pk)
         self.assertEqual(task.title, 'task1')
-        self.assertFalse(task.completed)
+        self.assertEqual(task.completed, Task.CompletedStatus.NOT_STARTED)
         self.assertEqual(task.due_at, due)
 
     def test_create_task2(self):
@@ -24,7 +24,7 @@ class TaskModelTestCase(TestCase):
 
         task = Task.objects.get(pk=task.pk)
         self.assertEqual(task.title, 'task2')
-        self.assertFalse(task.completed)
+        self.assertEqual(task.completed, Task.CompletedStatus.NOT_STARTED)
         self.assertIsNone(task.due_at,None)
     
     def test_is_overdue_future(self):
@@ -129,6 +129,34 @@ class TaskViewTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.templates[0].name, 'todo/detail.html')
         self.assertEqual(response.context['task'], task)
+        self.assertContains(response, 'Start')
+
+    def test_detail_get_in_progress_shows_complete_button(self):
+        task = Task.objects.create(
+            title='task1',
+            due_at=timezone.make_aware(datetime(2024, 7, 1)),
+            completed=Task.CompletedStatus.IN_PROGRESS,
+        )
+        client = Client()
+        response = client.get('/{}/'.format(task.pk))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Complete')
+        self.assertNotContains(response, 'Start')
+
+    def test_detail_get_completed_shows_no_advance_button(self):
+        task = Task.objects.create(
+            title='task1',
+            due_at=timezone.make_aware(datetime(2024, 7, 1)),
+            completed=Task.CompletedStatus.COMPLETED,
+        )
+        client = Client()
+        response = client.get('/{}/'.format(task.pk))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Start')
+        self.assertNotContains(response, '/advance/')
+        self.assertNotContains(response, 'button type="submit"')
     
     def test_detail_get_fail(self):
         client = Client()
@@ -149,7 +177,11 @@ class TaskViewTestCase(TestCase):
         task = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
         task.save()
         client = Client()
-        data = {'title': 'updated task', 'due_at': '2024-08-01 23:59:59'}
+        data = {
+            'title': 'updated task',
+            'due_at': '2024-08-01 23:59:59',
+            'completed': str(Task.CompletedStatus.IN_PROGRESS),
+        }
         response = client.post('/{}/edit/'.format(task.pk), data)
 
         task.refresh_from_db()
@@ -157,6 +189,17 @@ class TaskViewTestCase(TestCase):
         self.assertEqual(response.url, '/{}/'.format(task.pk))
         self.assertEqual(task.title, 'updated task')
         self.assertEqual(task.due_at, timezone.make_aware(datetime(2024, 8, 1, 23, 59, 59)))
+        self.assertEqual(task.completed, Task.CompletedStatus.IN_PROGRESS)
+
+    def test_update_get_has_status_options(self):
+        task = Task.objects.create(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
+        client = Client()
+        response = client.get('/{}/edit/'.format(task.pk))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Not Started')
+        self.assertContains(response, 'In Progress')
+        self.assertContains(response, 'Completed')
 
     def test_delete_get_success(self):
         task = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
@@ -178,15 +221,43 @@ class TaskViewTestCase(TestCase):
         task = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
         task.save()
         client = Client()
-        response = client.get('/{}/close>'.format(task.pk))
+        response = client.get('/{}/close'.format(task.pk))
 
         task.refresh_from_db()
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, '/')
-        self.assertTrue(task.completed)
+        self.assertEqual(task.completed, Task.CompletedStatus.COMPLETED)
 
     def test_close_get_fail(self):
         client = Client()
-        response = client.get('/1/close>')
+        response = client.get('/1/close')
 
         self.assertEqual(response.status_code, 404)
+
+    def test_advance_status_from_not_started(self):
+        task = Task.objects.create(
+            title='task1',
+            due_at=timezone.make_aware(datetime(2024, 7, 1)),
+            completed=Task.CompletedStatus.NOT_STARTED,
+        )
+        client = Client()
+        response = client.post('/{}/advance/'.format(task.pk))
+
+        task.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/{}/'.format(task.pk))
+        self.assertEqual(task.completed, Task.CompletedStatus.IN_PROGRESS)
+
+    def test_advance_status_from_in_progress(self):
+        task = Task.objects.create(
+            title='task1',
+            due_at=timezone.make_aware(datetime(2024, 7, 1)),
+            completed=Task.CompletedStatus.IN_PROGRESS,
+        )
+        client = Client()
+        response = client.post('/{}/advance/'.format(task.pk))
+
+        task.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/{}/'.format(task.pk))
+        self.assertEqual(task.completed, Task.CompletedStatus.COMPLETED)

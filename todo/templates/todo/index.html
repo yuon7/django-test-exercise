@@ -54,11 +54,8 @@
         {% if task.tags.all %}
         <li>Tags: {% for tag in task.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</li>
         {% endif %}
-        {% if task.completed %} 
-        <li>Status: Completed</li>
-        {% else %}
-        <li>Status: Not Completed</li>
-        {% endif %}
+        <li>Status: {{ task.get_completed_display }}</li>
+        
       </ul>
     </div>
     {% endfor %}
