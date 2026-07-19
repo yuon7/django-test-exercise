@@ -71,10 +71,24 @@ def update(request, task_id):
         raise Http404("Task does not exist")
     
     if request.method == 'POST':
-        task.title = request.POST['title']
-        task.due_at = make_aware(parse_datetime(request.POST['due_at']))
-        task.completed = int(request.POST['completed'])
+        task.title = request.POST.get('title', '')
+        task.due_at = _parse_due_at(request.POST.get('due_at'))
+        task.completed = int(request.POST.get('completed', Task.CompletedStatus.NOT_STARTED))
+
+        category_name = request.POST.get('category', '').strip()
+        if category_name:
+            category, _ = Category.objects.get_or_create(name=category_name)
+            task.category = category
+        else:
+            task.category = None
+
         task.save()
+
+        task.tags.clear()
+        for tag_name in [name.strip() for name in request.POST.get('tags', '').split(',') if name.strip()]:
+            tag, _ = Tag.objects.get_or_create(name=tag_name)
+            task.tags.add(tag)
+
         return redirect('detail', task_id)
 
     context = {

@@ -31,6 +31,14 @@
         <input id="tagsInput" name="tags" type="text" value="{% for tag in task.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
       </div>
       <div>
+        <label for="completedInput">Status</label><br>
+        <select id="completedInput" name="completed">
+          {% for value, label in completed_statuses.choices %}
+          <option value="{{ value }}" {% if task.completed == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
         <button type="submit">Submit</button>
       </div>
     </form>

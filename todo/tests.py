@@ -191,6 +191,23 @@ class TaskViewTestCase(TestCase):
         self.assertEqual(task.due_at, timezone.make_aware(datetime(2024, 8, 1, 23, 59, 59)))
         self.assertEqual(task.completed, Task.CompletedStatus.IN_PROGRESS)
 
+    def test_update_post_saves_category_and_tags(self):
+        task = Task.objects.create(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
+        client = Client()
+        data = {
+            'title': 'updated task',
+            'due_at': '2024-08-01 23:59:59',
+            'completed': str(Task.CompletedStatus.IN_PROGRESS),
+            'category': 'Work',
+            'tags': 'study, urgent',
+        }
+        response = client.post('/{}/edit/'.format(task.pk), data)
+
+        task.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(task.category.name, 'Work')
+        self.assertEqual(set(task.tags.values_list('name', flat=True)), {'study', 'urgent'})
+
     def test_update_get_has_status_options(self):
         task = Task.objects.create(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
         client = Client()

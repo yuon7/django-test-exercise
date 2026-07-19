@@ -25,6 +25,6 @@ urlpatterns = [
     path('<int:task_id>/delete/', todo_views.delete, name='delete'),
     path('<int:task_id>/edit/', todo_views.update, name='update'),
     path('<int:task_id>/close/', todo_views.close, name='close'),
-    re_path(r'^(?P<task_id>\d+)/close>$', todo_views.close, name='close_with_gt'),
+    re_path(r'^(?P<task_id>\d+)/close/?$', todo_views.close, name='close_with_gt'),
     path('<int:task_id>/advance/', todo_views.advance_status, name='advance_status'),
 ]
